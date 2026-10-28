@@ -6,9 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       test_alert:
-        description: "Send a test push alert at start"
+        description: "Send a test notification to every iPhone with alerts on"
         type: boolean
         default: false
+
+permissions:
+  contents: write # publishes live status to the `status` branch for the web page
 
 concurrency:
   group: duo-tracker
@@ -23,11 +26,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm install --no-audit --no-fund
       - name: Watch Apple Store pickup
         run: node tracker.js
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ZIP: ${{ secrets.ZIP }}
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           RADIUS_MILES: ${{ vars.RADIUS_MILES || '30' }}
           INTERVAL_SEC: ${{ vars.INTERVAL_SEC || '20' }}
           INCLUDE_CARRIER: ${{ vars.INCLUDE_CARRIER || 'false' }}

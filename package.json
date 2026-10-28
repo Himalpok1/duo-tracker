@@ -1,0 +1,11 @@
+{
+  "name": "duo-tracker",
+  "private": true,
+  "description": "iPhone Duo Apple Store pickup tracker with iPhone push alerts",
+  "scripts": {
+    "start": "node tracker.js"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}
