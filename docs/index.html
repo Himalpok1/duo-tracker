@@ -291,27 +291,23 @@
           <h3>${welcomed ? "Alerts are on" : "Almost done"}</h3>
           <p>${welcomed
             ? "This iPhone gets a notification the moment any iPhone Duo is ready for pickup near you."
-            : "Saved. The tracker picks up new devices within about 5 minutes and sends a “Alerts are on” notification to confirm."}</p>
+            : "This iPhone is registered. Within about 2 minutes you’ll get an “Alerts are on ✅” notification to confirm."}</p>
         </div></div>
         <div class="row">
           <button class="secondary" id="testBtn">Show a sample alert</button>
-          <button class="secondary" id="redoBtn">Set up alerts again</button>
-        </div>`;
+          <button class="secondary" id="redoBtn">Re-register this iPhone</button>
+        </div>
+        <p class="small" id="alertMsg"></p>`;
       $("testBtn").onclick = testLocal;
-      $("redoBtn").onclick = () => { store.set("duo-sub-name", ""); renderAlerts(); };
+      $("redoBtn").onclick = enable;
       return;
     }
-    const pending = store.get("duo-sub-json");
     box.innerHTML = `
       <h3>Turn on alerts</h3>
       <p>Get a notification on this iPhone the second an iPhone Duo is ready for pickup near you.</p>
-      <div class="row">
-        <button id="onBtn">${pending ? "Allow notifications again" : "Turn on alerts"}</button>
-        ${pending ? '<button class="secondary" id="saveBtn">Finish: save this iPhone on GitHub</button>' : ""}
-      </div>
+      <div class="row"><button id="onBtn">Turn on alerts</button></div>
       <p class="small" id="alertMsg"></p>`;
     $("onBtn").onclick = enable;
-    if (pending) $("saveBtn").onclick = () => saveToGitHub(pending);
   }
 
   function b64ToBytes(b64) {
@@ -319,8 +315,27 @@
     return Uint8Array.from(s, (c) => c.charCodeAt(0));
   }
 
+  function deviceId() {
+    let id = store.get("duo-device-id");
+    if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); store.set("duo-device-id", id); }
+    return id;
+  }
+
+  // Hands this iPhone's push address to the tracker through a private relay channel.
+  async function register(sub) {
+    const id = deviceId();
+    const r = await fetch(`https://ntfy.sh/${cfg.relayTopic}`, {
+      method: "POST",
+      body: JSON.stringify({ id, sub: sub.toJSON() }),
+    });
+    if (!r.ok) throw new Error("registration failed (" + r.status + ")");
+    store.set("duo-sub-name", "dev-" + id);
+    store.set("duo-registered-at", String(Date.now()));
+  }
+
   async function enable() {
     const msg = $("alertMsg");
+    if (msg) msg.textContent = "Setting up…";
     try {
       const perm = await Notification.requestPermission();
       if (perm !== "granted") { msg.textContent = "Notifications were blocked. Turn them on in Settings → Notifications → Duo Tracker, then try again."; return; }
@@ -328,35 +343,23 @@
       await navigator.serviceWorker.ready;
       let sub = await reg.pushManager.getSubscription();
       if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(cfg.vapidPublicKey) });
-      const json = JSON.stringify(sub.toJSON(), null, 2);
-      store.set("duo-sub-json", json);
-      saveToGitHub(json);
+      await register(sub);
+      renderAlerts();
     } catch (e) {
-      msg.textContent = "Couldn’t turn on alerts: " + e.message;
+      if (msg) msg.textContent = "Couldn’t turn on alerts: " + e.message;
     }
   }
 
-  // The tracker reads devices from the repo's subscriptions/ folder. This opens GitHub's
-  // "new file" page with the file already filled in; the user just taps Commit.
-  function saveToGitHub(json) {
-    let name = store.get("duo-sub-pending-name");
-    if (!name) { name = "iphone-" + Math.random().toString(36).slice(2, 8) + ".json"; store.set("duo-sub-pending-name", name); }
-    try { navigator.clipboard && navigator.clipboard.writeText(json); } catch {}
-    const url = `https://github.com/${cfg.owner}/${cfg.repo}/new/main?filename=${encodeURIComponent("subscriptions/" + name)}&value=${encodeURIComponent(json)}&message=${encodeURIComponent("Add iPhone for alerts")}`;
-    $("alerts").innerHTML = `
-      <h3>Last step: save this iPhone</h3>
-      <ol class="steps">
-        <li>Tap <b>Open GitHub</b> below (sign in if asked).</li>
-        <li>The file is already filled in. Tap <b>Commit changes</b>, then <b>Commit changes</b> again.</li>
-        <li>Come back here and tap <b>I saved it</b>.</li>
-      </ol>
-      <div class="row">
-        <a class="btn" href="${url}" target="_blank" rel="noopener">Open GitHub</a>
-        <button class="secondary" id="doneBtn">I saved it</button>
-      </div>
-      <p class="small">If the file shows up empty on GitHub, paste — it’s already copied.</p>`;
-    $("doneBtn").onclick = () => { store.set("duo-sub-name", name); store.set("duo-sub-json", ""); renderAlerts(); };
-  }
+  // Re-send the registration once a day in case the tracker missed it.
+  (async () => {
+    try {
+      if (!store.get("duo-sub-name") || !pushOK || Notification.permission !== "granted") return;
+      if (Date.now() - Number(store.get("duo-registered-at") || 0) < 864e5) return;
+      const r = reg || await navigator.serviceWorker.ready;
+      const sub = await r.pushManager.getSubscription();
+      if (sub) await register(sub);
+    } catch {}
+  })();
 
   async function testLocal() {
     try {

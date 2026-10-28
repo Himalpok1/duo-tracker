@@ -23,7 +23,7 @@ const BUY_BASE = "https://www.apple.com/shop/buy-iphone/iphone-duo";
 const FULFILLMENT = "https://www.apple.com/shop/fulfillment-messages";
 const CHUNK = 8; // parts per pickup request
 const STATUS_EVERY_MS = 120_000;
-const SUBS_EVERY_MS = 5 * 60_000;
+const SUBS_EVERY_MS = 2 * 60_000;
 const MAX_DROPS = 80;
 
 const HEADERS = {
@@ -90,25 +90,52 @@ async function publishStatus(status) {
 }
 
 // ---------- Web Push ----------
+// Devices come from three places, merged by id:
+//  1. the page's "Turn on alerts" button, relayed through a private ntfy.sh topic (no app needed)
+//  2. devices remembered in status.json from earlier runs
+//  3. optional files in the repo's subscriptions/ folder
 let subs = []; // [{name, sub}]
+let dropped = new Set(); // ids whose push endpoint expired
 
-async function loadSubscriptions() {
-  const list = await gh(`/contents/subscriptions?ref=main`);
-  if (!list.ok || !Array.isArray(list.json)) return subs;
-  const out = [];
-  for (const f of list.json) {
-    if (!f.name.endsWith(".json")) continue;
-    const r = await gh(`/contents/subscriptions/${encodeURIComponent(f.name)}?ref=main`, {
-      headers: { Accept: "application/vnd.github.raw+json" },
-    });
+const validSub = (s) => s && typeof s.endpoint === "string" && /^https:\/\//.test(s.endpoint) && s.keys && s.keys.p256dh && s.keys.auth;
+
+async function loadSubscriptions(remembered = []) {
+  const byName = new Map();
+  for (const r of remembered) if (validSub(r.sub)) byName.set(r.name, r);
+
+  // 1. relay
+  if (CONFIG.relayTopic) {
     try {
-      const sub = typeof r.json === "string" ? JSON.parse(r.json) : r.json;
-      if (sub && sub.endpoint && sub.keys) out.push({ name: f.name, sub });
-    } catch {
-      log("bad subscription file:", f.name);
+      const res = await fetch(`https://ntfy.sh/${CONFIG.relayTopic}/json?poll=1&since=12h`);
+      for (const line of (await res.text()).split("\n")) {
+        if (!line.trim()) continue;
+        try {
+          const ev = JSON.parse(line);
+          if (ev.event !== "message") continue;
+          const msg = JSON.parse(ev.message);
+          if (/^[a-z0-9-]{4,40}$/i.test(msg.id || "") && validSub(msg.sub)) byName.set(`dev-${msg.id}`, { name: `dev-${msg.id}`, sub: msg.sub });
+        } catch {}
+      }
+    } catch (e) {
+      log("relay read failed:", e.message);
     }
   }
-  subs = out;
+
+  // 3. repo folder
+  const list = await gh(`/contents/subscriptions?ref=main`);
+  if (list.ok && Array.isArray(list.json)) {
+    for (const f of list.json) {
+      if (!f.name.endsWith(".json")) continue;
+      const r = await gh(`/contents/subscriptions/${encodeURIComponent(f.name)}?ref=main`, {
+        headers: { Accept: "application/vnd.github.raw+json" },
+      });
+      try {
+        const sub = typeof r.json === "string" ? JSON.parse(r.json) : r.json;
+        if (validSub(sub)) byName.set(f.name, { name: f.name, sub });
+      } catch {}
+    }
+  }
+  subs = [...byName.values()].filter((s) => !dropped.has(s.name));
   return subs;
 }
 
@@ -120,6 +147,10 @@ async function push(payload, only) {
       await webpush.sendNotification(sub, JSON.stringify(payload), { TTL: 600, urgency: "high" });
     } catch (e) {
       log(`push to ${name} failed: ${e.statusCode || ""} ${e.body || e.message}`);
+      if (e.statusCode === 404 || e.statusCode === 410) {
+        dropped.add(name);
+        subs = subs.filter((s) => s.name !== name);
+      }
     }
   }
 }
@@ -143,14 +174,63 @@ async function discoverParts() {
   return [...found];
 }
 
-async function checkChunk(parts) {
-  const q = new URLSearchParams({ pl: "true", "mts.0": "regular", "mts.1": "compact", cppart: "UNLOCKED/US", location: ZIP });
+// Apple's bot filter (HTTP 541) treats request shapes differently, so try a few and keep the first that works.
+const VARIANTS = [
+  { id: "fulfillment-multi", url: FULFILLMENT, base: { pl: "true", "mts.0": "regular", "mts.1": "compact", cppart: "UNLOCKED/US" }, multi: true, browser: true },
+  { id: "fulfillment-single", url: FULFILLMENT, base: { "mts.0": "regular", "mts.1": "compact" }, multi: false, browser: true },
+  { id: "fulfillment-plain", url: FULFILLMENT, base: { pl: "true", "mts.0": "regular" }, multi: false, browser: false },
+  { id: "retail-pickup", url: "https://www.apple.com/shop/retail/pickup-message", base: { pl: "true", cppart: "UNLOCKED/US" }, multi: false, browser: true },
+];
+let variant = VARIANTS[0];
+let cookie = "";
+
+const BROWSER_HEADERS = {
+  ...HEADERS,
+  "Sec-Fetch-Site": "same-origin",
+  "Sec-Fetch-Mode": "cors",
+  "Sec-Fetch-Dest": "empty",
+  "X-Requested-With": "XMLHttpRequest",
+};
+
+async function warmCookies() {
+  try {
+    const res = await fetch(BUY_BASE, { headers: { ...HEADERS, Accept: "text/html" } });
+    const set = typeof res.headers.getSetCookie === "function" ? res.headers.getSetCookie() : [];
+    cookie = set.map((c) => c.split(";")[0]).join("; ");
+    return res.status;
+  } catch (e) {
+    return e.message;
+  }
+}
+
+async function request(v, parts) {
+  const q = new URLSearchParams({ ...v.base, location: ZIP });
   parts.forEach((p, i) => q.set(`parts.${i}`, p));
-  const res = await fetch(`${FULFILLMENT}?${q}`, { headers: HEADERS });
+  const headers = { ...(v.browser ? BROWSER_HEADERS : HEADERS), ...(cookie ? { Cookie: cookie } : {}) };
+  const res = await fetch(`${v.url}?${q}`, { headers });
   if (!res.ok) throw new Error(`Apple HTTP ${res.status}`);
   const data = await res.json();
-  return data?.body?.content?.pickupMessage?.stores || [];
+  return data?.body?.content?.pickupMessage?.stores || data?.body?.stores || [];
 }
+
+async function probe(parts) {
+  const diag = { buyPage: await warmCookies(), cookies: cookie ? cookie.split(";").length : 0, variants: {} };
+  for (const v of VARIANTS) {
+    try {
+      const stores = await request(v, v.multi ? parts.slice(0, CHUNK) : parts.slice(0, 1));
+      diag.variants[v.id] = `ok (${stores.length} stores)`;
+      if (!diag.working) { diag.working = v.id; variant = v; }
+    } catch (e) {
+      diag.variants[v.id] = e.message;
+    }
+    await sleep(1500);
+  }
+  log("probe:", JSON.stringify(diag));
+  return diag;
+}
+
+const chunkSize = () => (variant.multi ? CHUNK : 1);
+const checkChunk = (parts) => request(variant, parts);
 
 function buyUrl(title) {
   const m = /(\d+\s?(?:GB|TB))\s+(.+?)(?:\s*\(|$)/i.exec(title || "");
@@ -184,12 +264,19 @@ async function main() {
     drops: Array.isArray(prev.drops) ? prev.drops.slice(0, MAX_DROPS) : [],
     devices: 0,
     welcomed: Array.isArray(prev.welcomed) ? prev.welcomed : [],
+    subscriptions: Array.isArray(prev.subscriptions) ? prev.subscriptions : [],
+    warnedAt: prev.warnedAt || null,
+    diag: null,
   };
   // Any drop left "open" by a previous run is closed now.
   for (const d of status.drops) if (!d.end) d.end = prev.updated || status.startedAt;
 
-  await loadSubscriptions();
-  status.devices = subs.length;
+  const refreshSubs = async () => {
+    await loadSubscriptions(status.subscriptions);
+    status.subscriptions = subs;
+    status.devices = subs.length;
+  };
+  await refreshSubs();
   const welcomeNew = async () => {
     const fresh = subs.map((s) => s.name).filter((n) => !status.welcomed.includes(n));
     if (fresh.length) {
@@ -214,6 +301,10 @@ async function main() {
     process.exit(1);
   }
   log(`tracking ${parts.length} parts near ${ZIP} within ${RADIUS_MILES} mi`);
+  status.diag = await probe(parts);
+  status.diag.parts = parts.length;
+  status.updated = new Date().toISOString();
+  await publishStatus(status);
 
   const open = new Map(); // "storeNumber|part" -> drop object
   const deadline = Date.now() + RUN_MINUTES * 60_000;
@@ -229,8 +320,8 @@ async function main() {
     let okAll = true;
     let lastErr = null;
 
-    for (let i = 0; i < parts.length; i += CHUNK) {
-      const chunk = parts.slice(i, i + CHUNK);
+    for (let i = 0; i < parts.length; i += chunkSize()) {
+      const chunk = parts.slice(i, i + chunkSize());
       try {
         for (const s of await checkChunk(chunk)) {
           const dist = parseFloat(s.storedistance ?? s.storeDistanceWithUnit);
@@ -285,16 +376,18 @@ async function main() {
     } else if (++failures >= 6) {
       status.ok = false;
       status.error = `Apple isn't answering (${lastErr}). It may be blocking GitHub's servers.`;
-      if (failures >= 15 && !warned) {
+      if (failures % 30 === 0) status.diag = { ...(await probe(parts)), parts: parts.length };
+      const dayAgo = Date.now() - 24 * 3600_000;
+      if (failures >= 15 && !warned && (!status.warnedAt || new Date(status.warnedAt) < dayAgo)) {
         warned = true;
+        status.warnedAt = new Date().toISOString();
         await push({ title: "Duo Tracker can't reach Apple", body: "Checks have been failing for a few minutes. Open the tracker for details.", url: CONFIG.siteUrl, tag: "problem" });
       }
     }
 
     if (Date.now() - lastSubs > SUBS_EVERY_MS) {
       lastSubs = Date.now();
-      await loadSubscriptions();
-      status.devices = subs.length;
+      await refreshSubs();
       await welcomeNew();
     }
 
