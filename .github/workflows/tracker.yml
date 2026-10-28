@@ -1,0 +1,35 @@
+name: Duo tracker
+
+on:
+  schedule:
+    - cron: "17 * * * *" # hourly; a queued run takes over when the current one ends
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: "Send a test push alert at start"
+        type: boolean
+        default: false
+
+concurrency:
+  group: duo-tracker
+  cancel-in-progress: false
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Watch Apple Store pickup
+        run: node tracker.js
+        env:
+          ZIP: ${{ secrets.ZIP }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          RADIUS_MILES: ${{ vars.RADIUS_MILES || '30' }}
+          INTERVAL_SEC: ${{ vars.INTERVAL_SEC || '20' }}
+          INCLUDE_CARRIER: ${{ vars.INCLUDE_CARRIER || 'false' }}
+          PARTS: ${{ vars.PARTS }}
+          TEST_ALERT: ${{ inputs.test_alert }}
