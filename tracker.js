@@ -137,7 +137,13 @@ async function loadSubscriptions(remembered = []) {
       } catch {}
     }
   }
-  subs = [...byName.values()].filter((s) => !dropped.has(s.name));
+  // The same iPhone can be registered more than once (e.g. via the page and a repo file): keep one per endpoint.
+  const seen = new Set();
+  subs = [...byName.values()].filter((s) => {
+    if (dropped.has(s.name) || seen.has(s.sub.endpoint)) return false;
+    seen.add(s.sub.endpoint);
+    return true;
+  });
   return subs;
 }
 
