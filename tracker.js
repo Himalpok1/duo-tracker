@@ -26,7 +26,7 @@ const FULFILLMENT = "https://www.apple.com/shop/fulfillment-messages";
 const CHUNK = 12; // parts per pickup request (all iPhone Duo models fit in one)
 const STATUS_EVERY_MS = 120_000;
 const SUBS_EVERY_MS = 2 * 60_000;
-const MAX_DROPS = 80;
+const MAX_DROPS = 300; // ~30 days of history for the "when drops happen" chart
 
 const HEADERS = {
   "User-Agent":
@@ -115,7 +115,9 @@ async function loadSubscriptions(remembered = []) {
           const ev = JSON.parse(line);
           if (ev.event !== "message") continue;
           const msg = JSON.parse(ev.message);
-          if (/^[a-z0-9-]{4,40}$/i.test(msg.id || "") && validSub(msg.sub)) byName.set(`dev-${msg.id}`, { name: `dev-${msg.id}`, sub: msg.sub });
+          if (/^[a-z0-9-]{4,40}$/i.test(msg.id || "") && validSub(msg.sub)) {
+            byName.set(`dev-${msg.id}`, { name: `dev-${msg.id}`, sub: msg.sub, prefs: cleanPrefs(msg.prefs) });
+          }
         } catch {}
       }
     } catch (e) {
@@ -139,7 +141,9 @@ async function loadSubscriptions(remembered = []) {
   }
   // The same iPhone can be registered more than once (e.g. via the page and a repo file): keep one per endpoint.
   const seen = new Set();
-  subs = [...byName.values()].filter((s) => {
+  // Prefer page registrations (they carry alert preferences) over repo files for the same iPhone.
+  const ordered = [...byName.values()].sort((a, b) => Number(!a.name.startsWith("dev-")) - Number(!b.name.startsWith("dev-")));
+  subs = ordered.filter((s) => {
     if (dropped.has(s.name) || seen.has(s.sub.endpoint)) return false;
     seen.add(s.sub.endpoint);
     return true;
@@ -147,9 +151,18 @@ async function loadSubscriptions(remembered = []) {
   return subs;
 }
 
-async function push(payload, only) {
+// Alert preferences chosen on the page: empty list = everything.
+function cleanPrefs(p) {
+  const list = (x) => (Array.isArray(x) ? x.filter((v) => typeof v === "string" && v.length < 60).slice(0, 30) : []);
+  return p && typeof p === "object" ? { models: list(p.models), stores: list(p.stores) } : { models: [], stores: [] };
+}
+const wants = (prefs, model, store) =>
+  (!prefs?.models?.length || prefs.models.includes(model)) && (!prefs?.stores?.length || prefs.stores.includes(store));
+
+async function push(payload, only, match) {
   if (!VAPID_PRIVATE_KEY) return log("(VAPID_PRIVATE_KEY not set) would push:", payload.title);
-  const targets = only ? subs.filter((s) => only.includes(s.name)) : subs;
+  let targets = only ? subs.filter((s) => only.includes(s.name)) : subs;
+  if (match) targets = targets.filter((s) => match(s.prefs));
   for (const { name, sub } of targets) {
     try {
       await webpush.sendNotification(sub, JSON.stringify(payload), { TTL: 600, urgency: "high" });
@@ -264,6 +277,9 @@ async function main() {
   const status = {
     updated: null,
     startedAt: new Date().toISOString(),
+    host: ON_GITHUB ? "GitHub" : "Home lab",
+    checks: 0,
+    lastCheck: null,
     radius: RADIUS_MILES,
     intervalSec: INTERVAL_SEC,
     ok: true,
@@ -360,6 +376,8 @@ async function main() {
     let changed = false;
     if (okAll) {
       failures = 0;
+      status.checks++;
+      status.lastCheck = new Date().toISOString();
       status.ok = true;
       status.error = null;
       status.stores = [...stores.values()].sort((a, b) => (a.dist ?? 99) - (b.dist ?? 99));
@@ -374,7 +392,7 @@ async function main() {
         status.drops = status.drops.slice(0, MAX_DROPS);
         const body = `${v.name} is ready for pickup at Apple ${v.store}${v.dist != null ? ` (${v.dist} mi)` : ""}. ${v.quote}. Tap to reserve.`;
         log("IN STOCK:", body);
-        await push({ title: `iPhone Duo in stock · ${v.store}`, body, url: drop.url, tag: key });
+        await push({ title: `iPhone Duo in stock · ${v.store}`, body, url: drop.url, tag: key }, null, (p) => wants(p, v.name, v.store));
       }
       for (const [key, drop] of open) {
         if (!nowAvail.has(key)) {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Duo Tracker</title>
 <meta name="description" content="iPhone Duo pickup stock at Apple Stores near you, with instant alerts.">
-<meta name="theme-color" content="#07090f">
+<meta name="theme-color" content="#0e1530">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,166 +13,250 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
 <style>
+  /* Night Sky palette, named after the phone's own finishes */
   :root {
-    --bg: #07090f;
-    --panel: #0e121c;
-    --panel-2: #131826;
-    --line: #1d2436;
-    --text: #eef0f6;
-    --muted: #8b93a7;
-    --faint: #5b6378;
-    --go: #34d381;
-    --go-dim: rgba(52, 211, 129, .14);
-    --warn: #f5b84a;
-    --bad: #f0616d;
-    --white: #ece9e0;
-    --sky: #2e3a60;
-    --radius: 18px;
+    --night: #0e1530;
+    --deep: #151d3d;
+    --rule: #263058;
+    --star: #eeebe2;
+    --haze: #9aa3c7;
+    --dim: #5d678f;
+    --gold: #ffcf5c;
+    --gold-ink: #2a1e00;
+    --gold-wash: rgba(255, 207, 92, .12);
+    --red: #ff8a93;
+    --display: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  html { background: var(--night); }
   body {
-    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    padding: calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 28px);
-    max-width: 640px; margin: 0 auto;
+    margin: 0 auto; max-width: 620px; color: var(--star); background: var(--night);
+    font: 16px/1.5 var(--body); -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 32px);
   }
   a { color: inherit; }
-  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -.01em; }
-  .brand img { width: 30px; height: 30px; border-radius: 8px; }
-  .pill { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted);
-    border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; white-space: nowrap; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
-  .pill.live .dot { background: var(--go); box-shadow: 0 0 0 0 rgba(52,211,129,.6); animation: ping 2s infinite; }
-  .pill.stale .dot { background: var(--warn); }
-  .pill.down .dot { background: var(--bad); }
-  @keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(52,211,129,.55); } 70% { box-shadow: 0 0 0 9px rgba(52,211,129,0); } 100% { box-shadow: 0 0 0 0 rgba(52,211,129,0); } }
-
-  .hero { position: relative; overflow: hidden; border-radius: 24px; padding: 26px 22px 22px;
-    background: radial-gradient(120% 90% at 85% 0%, #17203a 0%, var(--panel) 55%); border: 1px solid var(--line); }
-  .hero::after { content: ""; position: absolute; right: -90px; top: -90px; width: 260px; height: 260px; border-radius: 50%;
-    border: 1px solid #1f2842; box-shadow: 0 0 0 40px rgba(31,40,66,.25), 0 0 0 80px rgba(31,40,66,.12); pointer-events: none; }
-  .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-  .hero h1 { font-size: 34px; line-height: 1.08; letter-spacing: -.025em; margin: 8px 0 8px; font-weight: 700; }
-  .hero h1 .n { color: var(--go); }
-  .hero p { margin: 0; color: var(--muted); max-width: 32ch; }
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px; position: relative; z-index: 1; }
-  .stat { background: rgba(7,9,15,.55); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
-  .stat b { display: block; font-size: 20px; letter-spacing: -.02em; }
-  .stat span { font-size: 12px; color: var(--muted); }
-
-  section { margin-top: 26px; }
-  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0 0 10px 4px; }
-
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
-  .alerts h3 { margin: 0 0 4px; font-size: 19px; letter-spacing: -.01em; }
-  .alerts p { margin: 0 0 14px; color: var(--muted); font-size: 15px; }
-  .steps { margin: 0 0 14px; padding: 0; list-style: none; counter-reset: s; }
-  .steps li { counter-increment: s; position: relative; padding: 0 0 10px 34px; color: var(--text); font-size: 15px; }
-  .steps li::before { content: counter(s); position: absolute; left: 0; top: -1px; width: 23px; height: 23px; border-radius: 50%;
-    background: var(--panel-2); border: 1px solid var(--line); display: grid; place-items: center; font-size: 12px; color: var(--muted); }
-  .share { display: inline-block; width: 15px; height: 17px; vertical-align: -3px; }
-  button, .btn { appearance: none; border: 0; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; text-align: center;
-    display: block; width: 100%; padding: 14px 16px; border-radius: 14px; background: var(--go); color: #04120b; }
-  button.secondary, .btn.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
-  button:disabled { opacity: .5; }
-  .row { display: grid; gap: 8px; }
-  .ok { display: flex; gap: 10px; align-items: flex-start; }
-  .ok .check { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--go-dim); color: var(--go); display: grid; place-items: center; font-weight: 700; }
-  .small { font-size: 13px; color: var(--faint); margin-top: 10px; }
-
-  .store { padding: 14px 16px; }
-  .store + .store { margin-top: 10px; }
-  .store-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; }
-  .store-head b { font-size: 17px; letter-spacing: -.01em; }
-  .store-head span { color: var(--muted); font-size: 13px; white-space: nowrap; }
-  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  .chip { position: relative; border-radius: 11px; padding: 8px 6px 7px; text-align: center; border: 1px solid var(--line);
-    background: var(--panel-2); color: var(--faint); font-size: 12px; text-decoration: none; display: block; }
-  .chip i { display: block; width: 14px; height: 14px; border-radius: 50%; margin: 0 auto 5px; border: 1px solid #39425a; }
-  .chip i.w { background: var(--white); } .chip i.s { background: var(--sky); }
-  .chip.on { border-color: var(--go); background: var(--go-dim); color: var(--text); font-weight: 600; }
-  .chip.on::after { content: ""; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--go); }
-  .legend { display: flex; gap: 14px; color: var(--faint); font-size: 12px; margin: 10px 4px 0; }
-  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
-
-  .drops { padding: 4px 16px; }
-  .drop { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .drop:last-child { border-bottom: 0; }
-  .drop b { font-size: 15px; } .drop .t { color: var(--muted); font-size: 13px; text-align: right; }
-  .drop .s { color: var(--muted); font-size: 13px; } .drop .live { color: var(--go); font-weight: 600; }
-  .empty { color: var(--muted); padding: 18px 16px; text-align: center; font-size: 15px; }
-  .error { border-color: rgba(240,97,109,.4); background: rgba(240,97,109,.08); color: #ffd7da; font-size: 15px; }
-  footer { color: var(--faint); font-size: 12px; text-align: center; margin-top: 30px; line-height: 1.6; }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 6px; }
+  h2 { font: 650 22px/1.2 var(--display); letter-spacing: -.01em; margin: 0 0 4px; }
+  .lede { color: var(--haze); margin: 0 0 14px; font-size: 15px; }
+  section { margin-top: 40px; }
   .hide { display: none !important; }
+
+  /* top bar */
+  .bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .name { font: 700 19px/1 var(--display); letter-spacing: -.01em; display: flex; align-items: center; gap: 9px; }
+  .name img { width: 28px; height: 28px; border-radius: 7px; }
+  .live { font-size: 13px; color: var(--haze); display: flex; align-items: center; gap: 7px; }
+  .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); }
+  .live.ok i { background: #7ee2a8; }
+  .live.warn i { background: var(--gold); }
+  .live.bad i { background: var(--red); }
+
+  /* hero: the sky */
+  .sky {
+    position: relative; margin: 18px -16px 0; padding: 26px 16px 22px; overflow: hidden;
+    background:
+      radial-gradient(1.2px 1.2px at 12% 18%, #c9cfe8 50%, transparent 51%),
+      radial-gradient(1px 1px at 33% 9%, #8d96bd 50%, transparent 51%),
+      radial-gradient(1.4px 1.4px at 71% 14%, #c9cfe8 50%, transparent 51%),
+      radial-gradient(1px 1px at 88% 31%, #8d96bd 50%, transparent 51%),
+      radial-gradient(1px 1px at 52% 27%, #6f79a3 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 6% 46%, #8d96bd 50%, transparent 51%),
+      linear-gradient(180deg, #0a1028 0%, var(--night) 100%);
+  }
+  .headline { font: 750 40px/1.02 var(--display); letter-spacing: -.035em; margin: 0; max-width: 12ch; }
+  .headline.lit { color: var(--gold); }
+  .since { color: var(--haze); margin: 10px 0 0; font-size: 15px; max-width: 40ch; }
+  .constellation { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 26px; }
+  .const { text-align: center; }
+  .stars { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 16px; gap: 10px 0; padding: 14px 6px; place-items: center; }
+  .st { width: 7px; height: 7px; border-radius: 50%; background: #39436d; display: block; }
+  .st.w { background: #4a5480; }
+  a.st.on { width: 14px; height: 14px; background: var(--gold); box-shadow: 0 0 10px 3px rgba(255, 207, 92, .55), 0 0 26px 8px rgba(255, 207, 92, .18); animation: twinkle 2.6s ease-in-out infinite; }
+  @keyframes twinkle { 50% { box-shadow: 0 0 6px 2px rgba(255, 207, 92, .4), 0 0 18px 5px rgba(255, 207, 92, .1); } }
+  @media (prefers-reduced-motion: reduce) { a.st.on { animation: none; } }
+  .const b { display: block; font: 600 13px/1.25 var(--display); }
+  .const span { font-size: 12px; color: var(--dim); }
+  .skykey { display: flex; gap: 16px; justify-content: center; font-size: 12px; color: var(--dim); margin-top: 16px; }
+  .skyhint { text-align: center; font-size: 12px; color: var(--dim); margin: 6px 0 0; }
+  .skykey i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+
+  /* ready for pickup */
+  .ready { display: grid; gap: 10px; }
+  .drop-now { border: 1px solid var(--gold); background: var(--gold-wash); border-radius: 16px; padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; }
+  .drop-now b { font: 650 18px/1.2 var(--display); }
+  .drop-now p { margin: 0; color: var(--haze); font-size: 14px; grid-column: 1; }
+  .reserve { grid-row: 1 / span 2; grid-column: 2; text-decoration: none; background: var(--gold); color: var(--gold-ink); font-weight: 700; padding: 11px 16px; border-radius: 12px; }
+
+  /* stores */
+  .store { border-top: 1px solid var(--rule); padding: 16px 0 6px; }
+  .store:first-of-type { border-top: 0; padding-top: 4px; }
+  .store-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .store-h b { font: 650 18px/1.25 var(--display); }
+  .store-h span { color: var(--haze); font-size: 14px; white-space: nowrap; }
+  .store small { display: block; color: var(--dim); font-size: 13px; margin-top: 2px; }
+  table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+  th { font-weight: 500; color: var(--dim); text-align: center; padding: 0 0 6px; font-size: 13px; }
+  th:first-child, td:first-child { text-align: left; width: 34%; }
+  td { padding: 7px 0; text-align: center; border-top: 1px solid var(--rule); color: var(--dim); }
+  td:first-child { color: var(--haze); white-space: nowrap; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; vertical-align: -1px; border: 1px solid #4a5480; }
+  .sw.n { background: #253058; } .sw.w { background: var(--star); }
+  td a { color: var(--gold); font-weight: 700; text-decoration: none; }
+
+  /* patterns */
+  .chart { display: grid; grid-template-columns: repeat(24, 1fr); align-items: end; gap: 3px; height: 92px; margin-top: 6px; }
+  .chart i { display: block; background: #2f3a66; border-radius: 3px 3px 0 0; min-height: 3px; }
+  .chart i.peak { background: var(--gold); }
+  .axis { display: grid; grid-template-columns: repeat(4, 1fr); color: var(--dim); font-size: 12px; margin-top: 6px; }
+  dl { display: grid; grid-template-columns: 1fr auto; margin: 18px 0 0; }
+  dt, dd { padding: 10px 0; border-top: 1px solid var(--rule); margin: 0; }
+  dt { color: var(--haze); }
+  dd { text-align: right; font-weight: 600; }
+  .note { color: var(--dim); font-size: 14px; margin: 10px 0 0; }
+
+  /* alerts */
+  .panel { background: var(--deep); border-radius: 20px; padding: 18px 16px; }
+  .panel h3 { font: 650 19px/1.25 var(--display); margin: 0 0 4px; }
+  .panel p { color: var(--haze); margin: 0 0 14px; font-size: 15px; }
+  .steps { margin: 0 0 6px; padding-left: 22px; }
+  .steps li { margin-bottom: 8px; }
+  .shareico { width: 15px; height: 17px; vertical-align: -3px; }
+  button { appearance: none; font: inherit; font-weight: 650; cursor: pointer; border: 0; border-radius: 13px; padding: 13px 16px; width: 100%; background: var(--gold); color: var(--gold-ink); }
+  button.quiet { background: transparent; color: var(--star); border: 1px solid var(--rule); }
+  button:disabled { opacity: .55; cursor: default; }
+  .btns { display: grid; gap: 8px; margin-top: 14px; }
+  .pick-label { font-size: 14px; color: var(--haze); margin: 16px 0 8px; }
+  .picks { display: flex; flex-wrap: wrap; gap: 7px; }
+  .pick { position: relative; }
+  .pick input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .pick span { display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--rule); font-size: 14px; color: var(--haze); }
+  .pick input:checked + span { border-color: var(--gold); color: var(--star); background: var(--gold-wash); }
+  .pick input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .msg { font-size: 14px; color: var(--haze); min-height: 1em; margin: 10px 0 0; }
+  .summary { color: var(--star); font-size: 15px; margin: 0; }
+
+  /* history */
+  .log { list-style: none; margin: 0; padding: 0; }
+  .log li { display: grid; grid-template-columns: 1fr auto; gap: 1px 12px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .log li:first-child { border-top: 0; }
+  .log b { font-weight: 600; }
+  .log .r { text-align: right; color: var(--haze); font-size: 14px; }
+  .log .s { color: var(--dim); font-size: 14px; }
+  .log a { color: var(--gold); font-weight: 650; text-decoration: none; }
+  .empty { color: var(--haze); margin: 0; }
+  .problem { margin-top: 16px; border: 1px solid rgba(255,138,147,.45); background: rgba(255,138,147,.08); color: #ffd9dc; border-radius: 14px; padding: 12px 14px; font-size: 15px; }
+  footer { color: var(--dim); font-size: 12px; text-align: center; margin-top: 44px; line-height: 1.6; }
 </style>
 </head>
 <body>
-<header>
-  <div class="brand"><img src="icon-192.png" alt=""> Duo Tracker</div>
-  <div id="pill" class="pill"><span class="dot"></span><span id="pillText">Connecting…</span></div>
-</header>
-
-<div class="hero">
-  <div class="eyebrow">iPhone Duo · In-store pickup</div>
-  <h1 id="headline">Scanning nearby stores…</h1>
-  <p id="sub">Apple Stores within 30 miles, checked about every 20 seconds.</p>
-  <div class="stats">
-    <div class="stat"><b id="stStores">–</b><span>stores</span></div>
-    <div class="stat"><b id="stDrops">–</b><span>drops this week</span></div>
-    <div class="stat"><b id="stLife">–</b><span>typical drop</span></div>
-  </div>
+<div class="bar">
+  <div class="name"><img src="icon-192.png" alt="">Duo Tracker</div>
+  <div class="live" id="live"><i></i><span id="liveText">Connecting</span></div>
 </div>
 
-<div id="errorBox" class="card error hide" style="margin-top:14px"></div>
+<div class="sky">
+  <h1 class="headline" id="headline">Looking for iPhone Duo</h1>
+  <p class="since" id="since">Checking Apple Stores near you.</p>
+  <div class="constellation" id="constellation"></div>
+  <div class="skykey"><span><i style="background:var(--gold)"></i>Ready for pickup</span><span><i style="background:#39436d"></i>Sold out</span></div>
+  <p class="skyhint">Each store: Night Sky on top, Star White below, 256GB to 2TB left to right.</p>
+</div>
 
-<section>
-  <h2>Alerts</h2>
-  <div class="card alerts" id="alerts"></div>
+<div class="problem hide" id="problem"></div>
+
+<section id="readySec" class="hide">
+  <h2>Ready for pickup</h2>
+  <p class="lede">Drops usually last a few minutes. Reserve first, decide later.</p>
+  <div class="ready" id="ready"></div>
 </section>
 
 <section>
-  <h2>Stores near you</h2>
-  <div id="stores"><div class="card empty">Waiting for the first check…</div></div>
-  <div class="legend"><span><i style="background:var(--go)"></i>Ready for pickup</span><span><i style="background:var(--panel-2);border:1px solid var(--line)"></i>Sold out</span></div>
+  <h2>Stores</h2>
+  <p class="lede" id="storesLede">Apple Stores within 30 miles, every iPhone Duo model.</p>
+  <div id="stores"></div>
 </section>
 
 <section>
-  <h2>Recent drops</h2>
-  <div class="card drops" id="drops"><div class="empty">No drops logged yet.</div></div>
+  <h2>When drops happen</h2>
+  <p class="lede">Drops by hour of day over the last 30 days, in your time zone.</p>
+  <div class="chart" id="chart" aria-label="Drops by hour of day"></div>
+  <div class="axis"><span>12 am</span><span>6 am</span><span>12 pm</span><span>6 pm</span></div>
+  <dl id="patterns"></dl>
+  <p class="note" id="patternNote"></p>
 </section>
 
-<footer>Not affiliated with Apple. Availability comes from Apple’s pickup data and changes by the second.<br>Always confirm at checkout on apple.com.</footer>
+<section>
+  <h2>Your alerts</h2>
+  <div class="panel" id="alerts" style="margin-top:12px"></div>
+</section>
+
+<section>
+  <h2>Drop history</h2>
+  <ul class="log" id="log" style="margin-top:8px"></ul>
+  <button class="quiet hide" id="more" style="margin-top:10px"></button>
+</section>
+
+<section>
+  <h2>Tracker</h2>
+  <dl id="health" style="margin-top:6px"></dl>
+</section>
+
+<footer>Not affiliated with Apple. Stock comes from Apple’s pickup data and changes by the second. Always confirm at checkout.</footer>
 
 <script>
 (async () => {
-  const cfg = await fetch("config.json", { cache: "no-store" }).then(r => r.json());
+  const cfg = await fetch("config.json", { cache: "no-store" }).then((r) => r.json());
   const $ = (id) => document.getElementById(id);
   const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const standalone = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
   const pushOK = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
   const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
                   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
-  let status = null;
+
+  const SIZES = ["256GB", "512GB", "1TB", "2TB"];
+  const COLORS = ["Night Sky", "Star White"];
+  const ALL_MODELS = SIZES.flatMap((s) => COLORS.map((c) => `${s} ${c}`));
+  const PRICE = { "256GB": 1999, "512GB": 2199, "1TB": 2599, "2TB": 3199 };
+  const BUY = "https://www.apple.com/shop/buy-iphone/iphone-duo";
+  const buyUrl = (m) => {
+    const x = /(\d+\s?(?:GB|TB))\s+(.+)/i.exec(m || "");
+    return x ? `${BUY}/7.6-inch-display-${x[1].replace(/\s/g, "").toLowerCase()}-${x[2].trim().toLowerCase().replace(/\s+/g, "-")}-unlocked` : BUY;
+  };
+  const sizeOf = (m) => (/(\d+\s?(?:GB|TB))/i.exec(m) || [""])[0].replace(/\s/g, "");
+  const price = (m) => PRICE[sizeOf(m)] ? "$" + PRICE[sizeOf(m)].toLocaleString() : "";
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const shortStore = (n) => String(n).replace(/ Town Square| Shopping Center| Mall| Village/g, "");
+
+  const ago = (iso) => {
+    if (!iso) return "never";
+    const s = Math.max(0, (Date.now() - new Date(iso)) / 1000);
+    if (s < 45) return "just now";
+    if (s < 3600) return Math.round(s / 60) + " min ago";
+    if (s < 86400) { const h = Math.round(s / 3600); return h + (h === 1 ? " hour ago" : " hours ago"); }
+    const d = Math.round(s / 86400); return d + (d === 1 ? " day ago" : " days ago");
+  };
+  const dur = (sec) => sec < 90 ? Math.round(sec) + " sec" : sec < 5400 ? Math.round(sec / 60) + " min" : (sec / 3600).toFixed(1) + " hr";
+  const when = (iso) => new Date(iso).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const lifeOf = (d) => (new Date(d.end || Date.now()) - new Date(d.start)) / 1000;
 
   let reg = null;
-  if ("serviceWorker" in navigator) {
-    try { reg = await navigator.serviceWorker.register("sw.js"); } catch (e) { console.warn(e); }
-  }
+  if ("serviceWorker" in navigator) { try { reg = await navigator.serviceWorker.register("sw.js"); } catch {} }
 
-  // ---------- status ----------
-  let etag = null;
-  async function loadStatus() {
+  // ---------- data ----------
+  let status = null, etag = null, showAll = false;
+  async function load() {
     try {
       const headers = { Accept: "application/vnd.github.raw+json" };
       if (etag) headers["If-None-Match"] = etag;
       const r = await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/status.json?ref=status`, { headers, cache: "no-store" });
       if (r.status === 304) return render();
       if (r.ok) { etag = r.headers.get("ETag"); status = await r.json(); return render(); }
-      if (r.status === 404) return render();
-      throw new Error("api " + r.status);
+      throw new Error(r.status);
     } catch {
       try {
         const r = await fetch(`https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/status/status.json?t=${Date.now()}`);
@@ -182,200 +266,279 @@
     }
   }
 
-  const ago = (iso) => {
-    const s = Math.max(0, (Date.now() - new Date(iso)) / 1000);
-    if (s < 60) return "just now";
-    if (s < 3600) return Math.round(s / 60) + " min ago";
-    if (s < 86400) return Math.round(s / 3600) + " h ago";
-    return Math.round(s / 86400) + " d ago";
-  };
-  const dur = (a, b) => {
-    const s = Math.max(1, (new Date(b || Date.now()) - new Date(a)) / 1000);
-    return s < 90 ? Math.round(s) + "s" : s < 5400 ? Math.round(s / 60) + "m" : (s / 3600).toFixed(1) + "h";
-  };
-  const when = (iso) => new Date(iso).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" });
-  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const buy = (model) => {
-    const m = /(\d+\s?(?:GB|TB))\s+(.+)/i.exec(model || "");
-    return m ? `https://www.apple.com/shop/buy-iphone/iphone-duo/7.6-inch-display-${m[1].replace(/\s/g, "").toLowerCase()}-${m[2].trim().toLowerCase().replace(/\s+/g, "-")}-unlocked`
-             : "https://www.apple.com/shop/buy-iphone/iphone-duo";
-  };
-
+  // ---------- render ----------
   function render() {
-    const pill = $("pill"), pt = $("pillText");
-    pill.className = "pill";
-    if (!status || !status.updated) {
-      pt.textContent = "Not started";
-      $("headline").textContent = "Tracker not running yet";
-      $("sub").textContent = "Once the GitHub workflow starts, live stock shows up here within a couple of minutes.";
-      renderAlerts();
-      return;
-    }
-    const age = (Date.now() - new Date(status.updated)) / 1000;
-    if (!status.ok) { pill.classList.add("down"); pt.textContent = "Can't reach Apple"; }
-    else if (age > 900) { pill.classList.add("stale"); pt.textContent = "Paused · " + ago(status.updated); }
-    else { pill.classList.add("live"); pt.textContent = "Live · " + ago(status.updated); }
+    const s = status;
+    const stores = (s && s.stores) || [];
+    const models = (s && s.models && s.models.length) ? s.models : ALL_MODELS;
+    const drops = (s && s.drops) || [];
+    const lastSeen = s && (s.lastCheck || s.updated);
+    const age = lastSeen ? (Date.now() - new Date(lastSeen)) / 1000 : Infinity;
 
-    $("errorBox").classList.toggle("hide", !!status.ok);
-    $("errorBox").textContent = status.error || "";
+    // status line
+    const live = $("live");
+    live.className = "live";
+    if (!s || !s.updated) { $("liveText").textContent = "Not started"; }
+    else if (!s.ok) { live.classList.add("bad"); $("liveText").textContent = "Apple is blocking checks"; }
+    else if (age > 900) { live.classList.add("warn"); $("liveText").textContent = "Paused, last check " + ago(lastSeen); }
+    else { live.classList.add("ok"); $("liveText").textContent = "Checked " + ago(lastSeen); }
+    $("problem").classList.toggle("hide", !(s && !s.ok));
+    $("problem").textContent = s && !s.ok ? (s.error || "Apple isn’t answering.") + " Alerts resume automatically once it does." : "";
 
-    const stores = status.stores || [];
+    // in-stock
     const inStock = [];
-    for (const s of stores) for (const [m, v] of Object.entries(s.items || {})) if (v.available) inStock.push({ s, m });
+    for (const st of stores) for (const [m, v] of Object.entries(st.items || {})) if (v.available) inStock.push({ st, m, v });
 
-    $("headline").innerHTML = inStock.length
-      ? `<span class="n">${inStock.length}</span> ready for pickup`
-      : "Nothing on the shelves";
-    $("sub").textContent = inStock.length
-      ? "Reserve fast — drops usually last minutes. Tap a green model below."
-      : `Watching ${stores.length} Apple Store${stores.length === 1 ? "" : "s"} within ${status.radius || 30} miles. You’ll get a notification the moment that changes.`;
+    const h = $("headline");
+    h.classList.toggle("lit", inStock.length > 0);
+    if (!s || !s.updated) { h.textContent = "Tracker not running yet"; }
+    else if (inStock.length) { h.textContent = inStock.length === 1 ? "1 ready for pickup" : `${inStock.length} ready for pickup`; }
+    else { h.textContent = "Nothing on the shelves"; }
 
-    const week = (status.drops || []).filter((d) => Date.now() - new Date(d.start) < 7 * 864e5);
-    const lives = week.filter((d) => d.end).map((d) => (new Date(d.end) - new Date(d.start)) / 1000).sort((a, b) => a - b);
-    $("stStores").textContent = stores.length;
-    $("stDrops").textContent = week.length;
-    $("stLife").textContent = lives.length ? dur(0, lives[Math.floor(lives.length / 2)] * 1000) : "–";
+    const last = drops[0];
+    $("since").textContent = !s || !s.updated
+      ? "Live stock appears here a couple of minutes after the tracker starts."
+      : inStock.length
+        ? "Tap a gold star, or a Reserve button below, to grab it."
+        : last
+          ? `Last drop was ${ago(last.start)}: ${last.model} at ${last.store}.`
+          : `No drops yet. Watching ${stores.length} store${stores.length === 1 ? "" : "s"} for all ${models.length} models.`;
 
-    const models = status.models || [];
-    $("stores").innerHTML = stores.length ? stores.map((s) => `
-      <div class="card store">
-        <div class="store-head"><b>${esc(s.name)}</b><span>${s.dist != null ? s.dist + " mi" : ""}</span></div>
-        <div class="grid">${models.map((m) => {
-          const v = (s.items || {})[m] || {};
-          const sw = /white/i.test(m) ? "w" : "s";
-          const label = (/(\d+\s?(?:GB|TB))/i.exec(m) || [m])[0].replace(/\s/g, "");
-          return v.available
-            ? `<a class="chip on" href="${buy(m)}" target="_blank" rel="noopener" title="${esc(m)} · ${esc(v.quote)}"><i class="${sw}"></i>${esc(label)}</a>`
-            : `<div class="chip" title="${esc(m)} · sold out"><i class="${sw}"></i>${esc(label)}</div>`;
-        }).join("")}</div>
-      </div>`).join("") : `<div class="card empty">No Apple Stores found within ${status.radius || 30} miles yet.</div>`;
+    // constellation: one block per store, top row Night Sky, bottom row Star White
+    $("constellation").innerHTML = stores.map((st) => {
+      const dots = COLORS.flatMap((c) => SIZES.map((sz) => {
+        const m = `${sz} ${c}`, v = (st.items || {})[m] || {};
+        const cls = c === "Star White" ? "st w" : "st";
+        return v.available
+          ? `<a class="${cls} on" href="${buyUrl(m)}" target="_blank" rel="noopener" aria-label="${esc(m)} ready at ${esc(st.name)}"></a>`
+          : `<span class="${cls}" title="${esc(m)}: sold out"></span>`;
+      })).join("");
+      return `<div class="const"><div class="stars">${dots}</div><b>${esc(shortStore(st.name))}</b><span>${st.dist != null ? st.dist.toFixed(1) + " mi" : ""}</span></div>`;
+    }).join("");
 
-    const drops = (status.drops || []).slice(0, 25);
-    $("drops").innerHTML = drops.length ? drops.map((d) => `
-      <div class="drop">
-        <b>${esc(d.model)}</b><span class="t">${when(d.start)}</span>
-        <span class="s">${esc(d.store)}${d.dist != null ? " · " + d.dist + " mi" : ""}</span>
-        <span class="t">${d.end ? "lasted " + dur(d.start, d.end) : '<a class="live" href="' + esc(d.url || buy(d.model)) + '" target="_blank" rel="noopener">live now →</a>'}</span>
-      </div>`).join("") : `<div class="empty">No drops logged yet. They’ll show up here with how long each lasted.</div>`;
+    // ready list
+    $("readySec").classList.toggle("hide", !inStock.length);
+    $("ready").innerHTML = inStock.map(({ st, m, v }) => `
+      <div class="drop-now">
+        <b>${esc(m)}</b>
+        <p>${esc(st.name)}, ${st.dist != null ? st.dist.toFixed(1) + " mi" : ""}. ${esc(v.quote || "Available")}. ${price(m)}</p>
+        <a class="reserve" href="${buyUrl(m)}" target="_blank" rel="noopener">Reserve</a>
+      </div>`).join("");
+
+    // stores
+    $("storesLede").textContent = `${stores.length || "No"} Apple Store${stores.length === 1 ? "" : "s"} within ${(s && s.radius) || 30} miles. Unlocked prices: 256GB $1,999, 512GB $2,199, 1TB $2,599, 2TB $3,199.`;
+    const lastAt = (name) => drops.find((d) => d.store === name);
+    $("stores").innerHTML = stores.length ? stores.map((st) => {
+      const ld = lastAt(st.name);
+      const rows = COLORS.map((c) => `<tr><td><span class="sw ${c === "Star White" ? "w" : "n"}"></span>${c}</td>${SIZES.map((sz) => {
+        const m = `${sz} ${c}`, v = (st.items || {})[m] || {};
+        return `<td>${v.available ? `<a href="${buyUrl(m)}" target="_blank" rel="noopener">Reserve</a>` : "–"}</td>`;
+      }).join("")}</tr>`).join("");
+      return `<div class="store">
+        <div class="store-h"><b>${esc(st.name)}</b><span>${st.dist != null ? st.dist.toFixed(1) + " mi" : ""}</span></div>
+        <small>${ld ? `Last had stock ${ago(ld.start)} (${esc(ld.model)})` : "No stock seen yet"}</small>
+        <table><tr><th></th>${SIZES.map((sz) => `<th>${sz}</th>`).join("")}</tr>${rows}</table>
+      </div>`;
+    }).join("") : `<p class="empty">${s && s.updated ? "No stores found within range yet." : "Waiting for the first check."}</p>`;
+
+    // patterns
+    const month = drops.filter((d) => Date.now() - new Date(d.start) < 30 * 864e5);
+    const hours = Array(24).fill(0);
+    month.forEach((d) => hours[new Date(d.start).getHours()]++);
+    const max = Math.max(...hours);
+    $("chart").innerHTML = hours.map((n, i) => `<i class="${n && n === max ? "peak" : ""}" style="height:${max ? Math.max(4, (n / max) * 100) : 4}%" title="${n} drop${n === 1 ? "" : "s"} around ${new Date(2026, 0, 1, i).toLocaleTimeString([], { hour: "numeric" })}"></i>`).join("");
+    const tally = (key) => { const t = {}; month.forEach((d) => t[d[key]] = (t[d[key]] || 0) + 1); return Object.entries(t).sort((a, b) => b[1] - a[1])[0]; };
+    const week = drops.filter((d) => Date.now() - new Date(d.start) < 7 * 864e5).length;
+    const lives = month.filter((d) => d.end).map(lifeOf).sort((a, b) => a - b);
+    const peakHour = max ? new Date(2026, 0, 1, hours.indexOf(max)).toLocaleTimeString([], { hour: "numeric" }) : null;
+    const topStore = tally("store"), topModel = tally("model");
+    const rows = [
+      ["Drops this week", week],
+      ["Drops in 30 days", month.length],
+      ["Typical drop lasts", lives.length ? dur(lives[Math.floor(lives.length / 2)]) : "–"],
+      ["Busiest hour", peakHour || "–"],
+      ["Busiest store", topStore ? `${shortStore(topStore[0])} (${topStore[1]})` : "–"],
+      ["Most common model", topModel ? `${topModel[0]} (${topModel[1]})` : "–"],
+    ];
+    $("patterns").innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("");
+    $("patternNote").textContent = month.length < 5 ? "Patterns get more reliable after a handful of drops." : "";
+
+    // history
+    const list = drops.slice(0, showAll ? 60 : 8);
+    $("log").innerHTML = list.length ? list.map((d) => `
+      <li><b>${esc(d.model)}</b><span class="r">${when(d.start)}</span>
+      <span class="s">${esc(d.store)}${d.dist != null ? ", " + d.dist.toFixed(1) + " mi" : ""}</span>
+      <span class="r">${d.end ? "lasted " + dur(lifeOf(d)) : `<a href="${esc(d.url || buyUrl(d.model))}" target="_blank" rel="noopener">Live now</a>`}</span></li>`).join("")
+      : `<li><p class="empty">No drops logged yet. Each one shows up here with how long it lasted.</p></li>`;
+    $("more").classList.toggle("hide", drops.length <= 8);
+    $("more").textContent = showAll ? "Show fewer" : `Show all ${Math.min(drops.length, 60)} drops`;
+
+    // health
+    const hl = s && s.updated ? [
+      ["Running on", s.host || "GitHub"],
+      ["Last check", ago(lastSeen)],
+      ["Checks every", `about ${s.intervalSec || 30} sec`],
+      ["Checks since start", s.checks != null ? Number(s.checks).toLocaleString() : "–"],
+      ["Running since", when(s.startedAt)],
+      ["Connection to Apple", s.ok ? "Working" : "Blocked, retrying"],
+      ["iPhones with alerts", s.devices ?? "–"],
+    ] : [["Status", "Not started"]];
+    $("health").innerHTML = hl.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("");
 
     renderAlerts();
   }
 
   // ---------- alerts ----------
-  const shareIcon = '<svg class="share" viewBox="0 0 15 17" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7.5 1v10M4 4.5 7.5 1 11 4.5"/><path d="M4.5 7H2.5a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-2"/></svg>';
+  const shareIcon = '<svg class="shareico" viewBox="0 0 15 17" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7.5 1v10M4 4.5 7.5 1 11 4.5"/><path d="M4.5 7H2.5a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-2"/></svg>';
+  const getPrefs = () => { try { return JSON.parse(store.get("duo-prefs") || "") || { models: [], stores: [] }; } catch { return { models: [], stores: [] }; } };
+  let editing = false;
+
+  function prefSummary(p) {
+    const m = p.models.length && p.models.length < ALL_MODELS.length ? p.models.join(", ") : "every model";
+    const names = (status && status.stores || []).map((x) => x.name);
+    const st = p.stores.length && p.stores.length < names.length ? p.stores.map(shortStore).join(", ") : "every nearby store";
+    return `Alerting for ${m} at ${st}.`;
+  }
 
   function renderAlerts() {
+    if (editing) return; // don't wipe checkboxes mid-edit on refresh
     const box = $("alerts");
     const saved = store.get("duo-sub-name");
-    const welcomed = saved && status && (status.welcomed || []).includes(saved);
+    const confirmed = saved && status && (status.welcomed || []).includes(saved);
 
     if (isIOS && !standalone) {
       box.innerHTML = `
         <h3>Get notified on this iPhone</h3>
-        <p>iPhone only allows alerts from web apps on your Home Screen. One-time setup:</p>
+        <p>iPhone only sends alerts from web apps on your Home Screen. One-time setup:</p>
         <ol class="steps">
-          <li>Tap ${shareIcon} <b>Share</b> in Safari’s toolbar.</li>
-          <li>Choose <b>Add to Home Screen</b>, then <b>Add</b>.</li>
-          <li>Open <b>Duo Tracker</b> from your Home Screen and tap <b>Turn on alerts</b>.</li>
-        </ol>
-        <p class="small" style="margin:0">Requires iOS 16.4 or later.</p>`;
+          <li>Tap ${shareIcon} Share in Safari.</li>
+          <li>Choose Add to Home Screen, then Add.</li>
+          <li>Open Duo Tracker from your Home Screen and tap Turn on alerts.</li>
+        </ol>`;
       return;
     }
     if (!pushOK) {
-      box.innerHTML = `<h3>Alerts aren’t supported here</h3><p style="margin:0">Open this page in Safari on your iPhone (iOS 16.4+) and add it to your Home Screen.</p>`;
+      box.innerHTML = `<h3>Alerts aren’t available here</h3><p style="margin:0">Open this page in Safari on iPhone (iOS 16.4 or later) and add it to your Home Screen.</p>`;
       return;
     }
-    if (saved && Notification.permission === "granted") {
+    if (!(saved && Notification.permission === "granted")) {
       box.innerHTML = `
-        <div class="ok"><div class="check">✓</div><div>
-          <h3>${welcomed ? "Alerts are on" : "Almost done"}</h3>
-          <p>${welcomed
-            ? "This iPhone gets a notification the moment any iPhone Duo is ready for pickup near you."
-            : "This iPhone is registered. Within about 2 minutes you’ll get an “Alerts are on ✅” notification to confirm."}</p>
-        </div></div>
-        <div class="row">
-          <button class="secondary" id="testBtn">Show a sample alert</button>
-          <button class="secondary" id="redoBtn">Re-register this iPhone</button>
-        </div>
-        <p class="small" id="alertMsg"></p>`;
-      $("testBtn").onclick = testLocal;
-      $("redoBtn").onclick = enable;
+        <h3>Turn on alerts</h3>
+        <p>Get a notification on this iPhone the moment an iPhone Duo is ready for pickup nearby.</p>
+        <button id="onBtn">Turn on alerts</button>
+        <p class="msg" id="msg"></p>`;
+      $("onBtn").onclick = () => enable();
       return;
     }
+    const p = getPrefs();
     box.innerHTML = `
-      <h3>Turn on alerts</h3>
-      <p>Get a notification on this iPhone the second an iPhone Duo is ready for pickup near you.</p>
-      <div class="row"><button id="onBtn">Turn on alerts</button></div>
-      <p class="small" id="alertMsg"></p>`;
-    $("onBtn").onclick = enable;
+      <h3>${confirmed ? "Alerts are on" : "Alerts are being set up"}</h3>
+      <p>${confirmed ? "This iPhone is registered." : "You’ll get an “Alerts are on” notification within about 2 minutes."} If alerts arrive silently, allow Duo Tracker in your Focus settings.</p>
+      <p class="summary">${esc(prefSummary(p))}</p>
+      <div class="btns">
+        <button class="quiet" id="editBtn">Choose models and stores</button>
+        <button class="quiet" id="testBtn">Show a sample alert</button>
+      </div>
+      <p class="msg" id="msg"></p>`;
+    $("editBtn").onclick = openPrefs;
+    $("testBtn").onclick = testLocal;
+  }
+
+  function openPrefs() {
+    editing = true;
+    const p = getPrefs();
+    const storeNames = (status && status.stores || []).map((x) => x.name);
+    const on = (list, v) => !list.length || list.includes(v);
+    const chip = (group, v, label, checked) =>
+      `<label class="pick"><input type="checkbox" name="${group}" value="${esc(v)}" ${checked ? "checked" : ""}><span>${label}</span></label>`;
+    $("alerts").innerHTML = `
+      <h3>Choose what alerts you</h3>
+      <p>Leave everything selected to hear about every drop.</p>
+      <div class="pick-label">Models</div>
+      <div class="picks">${ALL_MODELS.map((m) => chip("m", m, `<span class="sw ${/White/.test(m) ? "w" : "n"}" style="margin:0"></span>${esc(m)}`, on(p.models, m))).join("")}</div>
+      <div class="pick-label">Stores</div>
+      <div class="picks">${storeNames.map((n) => chip("s", n, esc(shortStore(n)), on(p.stores, n))).join("") || '<span class="note">Stores appear once the tracker has run.</span>'}</div>
+      <div class="btns">
+        <button id="saveBtn">Save alert choices</button>
+        <button class="quiet" id="cancelBtn">Cancel</button>
+      </div>
+      <p class="msg" id="msg"></p>`;
+    $("cancelBtn").onclick = () => { editing = false; renderAlerts(); };
+    $("saveBtn").onclick = async () => {
+      const picked = (g) => [...document.querySelectorAll(`input[name=${g}]:checked`)].map((i) => i.value);
+      let models = picked("m"), stores = picked("s");
+      if (!models.length) { $("msg").textContent = "Pick at least one model."; return; }
+      if (storeNames.length && !stores.length) { $("msg").textContent = "Pick at least one store."; return; }
+      if (models.length === ALL_MODELS.length) models = [];
+      if (stores.length === storeNames.length) stores = [];
+      $("saveBtn").disabled = true; $("msg").textContent = "Saving…";
+      try {
+        const sub = await (reg || await navigator.serviceWorker.ready).pushManager.getSubscription();
+        if (!sub) throw new Error("this iPhone isn’t registered; turn alerts on again");
+        await register(sub, { models, stores });
+        store.set("duo-prefs", JSON.stringify({ models, stores }));
+        editing = false; renderAlerts();
+        $("msg").textContent = "Saved. The tracker applies it within about 2 minutes.";
+      } catch (e) {
+        $("saveBtn").disabled = false; $("msg").textContent = "Couldn’t save: " + e.message;
+      }
+    };
   }
 
   function b64ToBytes(b64) {
     const s = atob(b64.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - b64.length % 4) % 4));
     return Uint8Array.from(s, (c) => c.charCodeAt(0));
   }
-
   function deviceId() {
     let id = store.get("duo-device-id");
     if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); store.set("duo-device-id", id); }
     return id;
   }
-
-  // Hands this iPhone's push address to the tracker through a private relay channel.
-  async function register(sub) {
+  // Hands this iPhone's push address (and alert choices) to the tracker through a private relay channel.
+  async function register(sub, prefs = getPrefs()) {
     const id = deviceId();
-    const r = await fetch(`https://ntfy.sh/${cfg.relayTopic}`, {
-      method: "POST",
-      body: JSON.stringify({ id, sub: sub.toJSON() }),
-    });
+    const r = await fetch(`https://ntfy.sh/${cfg.relayTopic}`, { method: "POST", body: JSON.stringify({ id, sub: sub.toJSON(), prefs }) });
     if (!r.ok) throw new Error("registration failed (" + r.status + ")");
     store.set("duo-sub-name", "dev-" + id);
     store.set("duo-registered-at", String(Date.now()));
   }
-
   async function enable() {
-    const msg = $("alertMsg");
-    if (msg) msg.textContent = "Setting up…";
+    const msg = $("msg");
+    msg.textContent = "Setting up…";
     try {
       const perm = await Notification.requestPermission();
-      if (perm !== "granted") { msg.textContent = "Notifications were blocked. Turn them on in Settings → Notifications → Duo Tracker, then try again."; return; }
+      if (perm !== "granted") { msg.textContent = "Notifications are blocked. Turn them on in Settings, Notifications, Duo Tracker, then try again."; return; }
       reg = reg || await navigator.serviceWorker.register("sw.js");
       await navigator.serviceWorker.ready;
       let sub = await reg.pushManager.getSubscription();
       if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(cfg.vapidPublicKey) });
       await register(sub);
       renderAlerts();
-    } catch (e) {
-      if (msg) msg.textContent = "Couldn’t turn on alerts: " + e.message;
-    }
+    } catch (e) { msg.textContent = "Couldn’t turn on alerts: " + e.message; }
   }
-
-  // Re-send the registration once a day in case the tracker missed it.
+  async function testLocal() {
+    try {
+      const r = reg || await navigator.serviceWorker.ready;
+      await r.showNotification("iPhone Duo in stock · Example Store", { body: "512GB Star White is ready for pickup. This is a sample; real alerts open the exact model on apple.com.", icon: "icon-192.png", tag: "sample" });
+      $("msg").textContent = "Sample sent. Alerts don’t pop up while this app is open; check Notification Center.";
+    } catch (e) { $("msg").textContent = "Couldn’t show a sample: " + e.message; }
+  }
+  // Refresh the registration once a day in case the tracker missed it.
   (async () => {
     try {
       if (!store.get("duo-sub-name") || !pushOK || Notification.permission !== "granted") return;
       if (Date.now() - Number(store.get("duo-registered-at") || 0) < 864e5) return;
-      const r = reg || await navigator.serviceWorker.ready;
-      const sub = await r.pushManager.getSubscription();
+      const sub = await (reg || await navigator.serviceWorker.ready).pushManager.getSubscription();
       if (sub) await register(sub);
     } catch {}
   })();
 
-  async function testLocal() {
-    try {
-      reg = reg || await navigator.serviceWorker.ready;
-      await reg.showNotification("iPhone Duo in stock · Example Store", {
-        body: "512GB Star White is ready for pickup (sample alert). Real alerts open the exact model on apple.com.",
-        icon: "icon-192.png", tag: "sample",
-      });
-    } catch (e) { alert("Couldn't show a sample: " + e.message); }
-  }
-
+  $("more").onclick = () => { showAll = !showAll; render(); };
   render();
-  await loadStatus();
-  setInterval(loadStatus, 60_000);
-  setInterval(render, 15_000);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) loadStatus(); });
+  await load();
+  setInterval(load, 60_000);
+  setInterval(render, 20_000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
 })();
 </script>
 </body>
