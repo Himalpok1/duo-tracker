@@ -11,7 +11,9 @@ const CONFIG = JSON.parse(fs.readFileSync(`${__dirname}/docs/config.json`, "utf8
 const ZIP = (process.env.ZIP || "").trim();
 const RADIUS_MILES = Number(process.env.RADIUS_MILES || 30);
 const INTERVAL_SEC = Number(process.env.INTERVAL_SEC || 20);
-const RUN_MINUTES = Number(process.env.RUN_MINUTES || 330); // ~5.5h; the schedule queues the next run
+const ON_GITHUB = process.env.GITHUB_ACTIONS === "true";
+// On GitHub each run lasts ~5.5h and the schedule queues the next one; at home it runs forever (0).
+const RUN_MINUTES = Number(process.env.RUN_MINUTES ?? (ON_GITHUB ? 330 : 0));
 const INCLUDE_CARRIER = /^(1|true|yes)$/i.test(process.env.INCLUDE_CARRIER || "");
 const PARTS_OVERRIDE = (process.env.PARTS || "").split(/[\s,]+/).filter(Boolean);
 const TEST_ALERT = /^(1|true|yes)$/i.test(process.env.TEST_ALERT || "");
@@ -21,7 +23,7 @@ const REPO = process.env.GITHUB_REPOSITORY || `${CONFIG.owner}/${CONFIG.repo}`;
 
 const BUY_BASE = "https://www.apple.com/shop/buy-iphone/iphone-duo";
 const FULFILLMENT = "https://www.apple.com/shop/fulfillment-messages";
-const CHUNK = 8; // parts per pickup request
+const CHUNK = 12; // parts per pickup request (all iPhone Duo models fit in one)
 const STATUS_EVERY_MS = 120_000;
 const SUBS_EVERY_MS = 2 * 60_000;
 const MAX_DROPS = 80;
@@ -176,6 +178,7 @@ async function discoverParts() {
 
 // Apple's bot filter (HTTP 541) treats request shapes differently, so try a few and keep the first that works.
 const VARIANTS = [
+  { id: "retail-pickup-multi", url: "https://www.apple.com/shop/retail/pickup-message", base: { pl: "true", cppart: "UNLOCKED/US" }, multi: true, browser: true },
   { id: "fulfillment-multi", url: FULFILLMENT, base: { pl: "true", "mts.0": "regular", "mts.1": "compact", cppart: "UNLOCKED/US" }, multi: true, browser: true },
   { id: "fulfillment-single", url: FULFILLMENT, base: { "mts.0": "regular", "mts.1": "compact" }, multi: false, browser: true },
   { id: "fulfillment-plain", url: FULFILLMENT, base: { pl: "true", "mts.0": "regular" }, multi: false, browser: false },
@@ -307,7 +310,7 @@ async function main() {
   await publishStatus(status);
 
   const open = new Map(); // "storeNumber|part" -> drop object
-  const deadline = Date.now() + RUN_MINUTES * 60_000;
+  const deadline = RUN_MINUTES > 0 ? Date.now() + RUN_MINUTES * 60_000 : Infinity;
   let lastPublish = 0;
   let lastSubs = Date.now();
   let failures = 0;
@@ -343,6 +346,7 @@ async function main() {
         okAll = false;
         lastErr = e.message;
         log(`check failed (${chunk.length} parts):`, e.message);
+        break; // don't keep hitting Apple once it pushes back
       }
       await sleep(400);
     }
@@ -373,12 +377,19 @@ async function main() {
           changed = true;
         }
       }
-    } else if (++failures >= 6) {
+    } else if (++failures >= 2) {
       status.ok = false;
-      status.error = `Apple isn't answering (${lastErr}). It may be blocking GitHub's servers.`;
-      if (failures % 30 === 0) status.diag = { ...(await probe(parts)), parts: parts.length };
+      status.error = `Apple is pushing back (${lastErr}). Slowing down and retrying automatically.`;
+      if (failures === 3 || failures % 10 === 0) status.diag = { ...(await probe(parts)), parts: parts.length };
+      if (ON_GITHUB && failures >= 8) {
+        // Blocked for 10+ minutes: end this run so the next one starts on a fresh GitHub machine (new IP).
+        status.updated = new Date().toISOString();
+        await publishStatus(status);
+        log("still blocked; ending run so a fresh machine takes over.");
+        return;
+      }
       const dayAgo = Date.now() - 24 * 3600_000;
-      if (failures >= 15 && !warned && (!status.warnedAt || new Date(status.warnedAt) < dayAgo)) {
+      if (failures >= 5 && !warned && (!status.warnedAt || new Date(status.warnedAt) < dayAgo)) {
         warned = true;
         status.warnedAt = new Date().toISOString();
         await push({ title: "Duo Tracker can't reach Apple", body: "Checks have been failing for a few minutes. Open the tracker for details.", url: CONFIG.siteUrl, tag: "problem" });
@@ -397,7 +408,9 @@ async function main() {
       lastPublish = Date.now();
     }
 
-    await sleep((INTERVAL_SEC + Math.random() * 5) * 1000);
+    // Back off exponentially while Apple is blocking (up to 10 min between tries).
+    const backoff = failures > 0 ? Math.min(INTERVAL_SEC * 2 ** failures, 600) : INTERVAL_SEC;
+    await sleep((backoff + Math.random() * 5) * 1000);
   }
 
   for (const d of open.values()) d.end = new Date().toISOString();

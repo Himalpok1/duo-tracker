@@ -19,6 +19,8 @@ concurrency:
 
 jobs:
   track:
+    # Set the repo variable HOME_LAB=true once the home-lab tracker is running, so GitHub stops (avoids duplicate alerts).
+    if: vars.HOME_LAB != 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 350
     steps:

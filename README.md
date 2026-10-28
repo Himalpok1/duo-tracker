@@ -38,6 +38,19 @@ Optional variables (same page → Variables):
 - **Remove a device:** delete its file in `subscriptions/`.
 - Each run lasts ~5.5 hours; the hourly schedule queues the next one so there's no gap.
 
+## Run it at home (recommended)
+
+Apple blocks cloud servers far more than home internet. On any always-on Linux box with Docker:
+
+```bash
+git clone https://github.com/Himalpok1/duo-tracker && cd duo-tracker
+cp .env.example .env   # fill in ZIP, VAPID_PRIVATE_KEY, GITHUB_TOKEN
+docker compose up -d --build
+docker compose logs -f
+```
+
+`GITHUB_TOKEN` is a fine-grained token for this repo only with **Contents: Read and write** (it updates the live page). Once it's running, add the repo variable `HOME_LAB` = `true` so the GitHub copy stops and you don't get duplicate alerts.
+
 ## Notes
 
 - Live status lives on the `status` branch (one commit, overwritten each update).
